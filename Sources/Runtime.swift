@@ -304,7 +304,7 @@ struct Interpreter {
             }
         }
         else {
-            throw JinjaError.runtime("Expected iterable type in for loop: got \(type(of:iterable))")
+            throw JinjaError.runtime("Expected iterable type in for loop: got \(type(of:iterable)), iterable: \(String(describing: iterable))")
         }
 
         return StringValue(value: result)
@@ -664,6 +664,17 @@ struct Interpreter {
         throw JinjaError.runtime("Unknown filter: \(node.filter)")
     }
 
+    func evaluateTestExpression(node: TestExpression, environment: Environment) throws -> any RuntimeValue {
+      let operand = try self.evaluate(statement: node.operand, environment: environment)
+
+      if let testFunction = environment.tests[node.test.value] {
+        let result = try testFunction(operand)
+        return BooleanValue(value: node.negate ? !result : result)
+      } else {
+        throw JinjaError.runtime("Unknown test: \(node.test.value)")
+      }
+    }
+
     func evaluate(statement: Statement?, environment: Environment) throws -> any RuntimeValue {
         if let statement {
             switch statement {
@@ -676,6 +687,7 @@ struct Interpreter {
             case let statement as Set:
                 return try self.evaluateSet(node: statement, environment: environment)
             case let statement as For:
+                print("::: statement: \(String(describing: statement))")
                 return try self.evaluateFor(node: statement, environment: environment)
             case let statement as Identifier:
                 return try self.evaluateIdentifier(node: statement, environment: environment)
@@ -693,8 +705,10 @@ struct Interpreter {
                 return BooleanValue(value: statement.value)
             case let statement as FilterExpression:
                 return try self.evaluateFilterExpression(node: statement, environment: environment)
+            case let statement as TestExpression:
+              return try self.evaluateTestExpression(node: statement, environment: environment)
             default:
-                throw JinjaError.runtime("Unknown node type: \(type(of:statement))")
+                throw JinjaError.runtime("Unknown node type: \(type(of:statement)), statement: \(String(describing: statement))")
             }
         }
         else {
