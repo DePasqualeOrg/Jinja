@@ -177,6 +177,7 @@ struct Interpreter {
     func evaluateBlock(statements: [Statement], environment: Environment) throws -> StringValue {
         var result = ""
         for statement in statements {
+          print("::: result: \(result)")
             let lastEvaluated = try self.evaluate(statement: statement, environment: environment)
 
             if !(lastEvaluated is NullValue), !(lastEvaluated is UndefinedValue) {
